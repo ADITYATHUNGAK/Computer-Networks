@@ -1,0 +1,92 @@
+# s1.awk
+BEGIN {
+    count = 0;
+}
+
+# Each trace line
+{
+    event = $1;
+    if (event == "d") {
+        count++;
+    }
+}
+
+END {
+    printf("\nNumber of packets dropped is: %d\n", count);
+}
+
+
+
+
+# s1.tcl
+#create new simulation instance
+set ns [new Simulator]
+
+#open trace file
+set tracefile [open s1.tr w]
+$ns trace-all $tracefile
+
+#open nam animation file
+set namfile [open s1.nam w]
+$ns namtrace-all $namfile
+
+#finish procedure
+proc finish {} {
+    global ns tracefile namfile
+    $ns flush-trace
+    close $tracefile
+    close $namfile
+
+    # run NAM
+    exec nam s1.nam &
+
+    # run awk to count packet drops
+    exec awk -f s1.awk s1.tr &
+
+    exit 0
+}
+
+# create 3 nodes
+set n0 [$ns node]
+set n1 [$ns node]
+set n2 [$ns node]
+
+# labels
+$n0 label "TCPSource"
+$n2 label "TCPSink"
+
+# set color for TCP flow
+$ns color 1 red
+
+# create duplex links
+$ns duplex-link $n0 $n1 1Mb 10ms DropTail
+$ns duplex-link $n1 $n2 1Mb 10ms DropTail
+
+# set queue size between n1 → n2
+$ns queue-limit $n1 $n2 5
+
+# create TCP agent
+set tcp [new Agent/TCP]
+$ns attach-agent $n0 $tcp
+
+# create TCP sink
+set tcpsink [new Agent/TCPSink]
+$ns attach-agent $n2 $tcpsink
+
+# FTP traffic over TCP
+set ftp [new Application/FTP]
+$ftp attach-agent $tcp
+
+# connect TCP → TCPSink
+$ns connect $tcp $tcpsink
+
+# set color class
+$tcp set class_ 1
+
+# schedule events
+$ns at 0.2 "$ftp start"
+$ns at 2.5 "$ftp stop"
+$ns at 3.0 "finish"
+
+# run simulation
+$ns run
