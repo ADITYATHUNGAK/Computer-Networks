@@ -1,0 +1,48 @@
+import java.util.Scanner;
+
+public class LeakyBucket {
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+
+        System.out.println("Enter the number of packets:");
+        int n = sc.nextInt();
+
+        System.out.println("Enter the bucket capacity:");
+        int bucketCap = sc.nextInt();
+
+        System.out.println("Enter the output rate:");
+        int outRate = sc.nextInt();
+
+        int[] packets = new int[n];
+        System.out.println("Enter the size of packets:");
+        for (int i = 0; i < n; i++) {
+            packets[i] = sc.nextInt();
+        }
+
+        int remaining = 0;
+        System.out.println("Clock | Size | Accept | Sent | Remaining");
+
+        for (int i = 0; i < n; i++) {
+            System.out.print((i + 1) + " | " + packets[i] + " | ");
+
+            if (packets[i] > bucketCap) {
+                System.out.println("0 | 0 | 0");
+                remaining = 0;
+            }
+            else if (packets[i] + remaining > bucketCap) {
+                System.out.println("0 | 0 | " + remaining);
+            }
+            else {
+                remaining += packets[i];
+                System.out.print(packets[i] + " | ");
+
+                int sent = Math.min(remaining, outRate);
+                remaining -= sent;
+
+                System.out.println(sent + " | " + remaining);
+            }
+        }
+
+        sc.close();
+    }
+}
